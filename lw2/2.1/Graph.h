@@ -1,19 +1,18 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <set>
 
 class Graph {
 public:
-	Graph(std::istream& input);
-    void printMatrixСoeffs(std::ostream& output);
-    void printCutPoints(std::ostream& output);
+	Graph(int vertexesNumber, std::vector<std::pair<int, int>> edges);
+    //void printMatrixСoeffs(std::ostream& output);
+    std::set<int> getCutPoints();
 private: 
-    void getVertexesAndEdgesNumber();
-    void readAdjacencyMatrix();
-    void getCutPoints();
+    void makeAdjacencyMatrix();
     void deepFirstSearch(int v, int p);
     int vertexesNumber = 0;
-    int edgesNumber = 0;
+    std::vector<std::pair<int, int>> edges;
     using Matrix = std::vector<std::vector<int>>;
     Matrix adjacencyMatrix;
     std::vector<bool> visited;
@@ -26,8 +25,6 @@ private:
       из этой вершины и всех ее потомков;
     - если обратных ребер у вершины и ее потомков нет, то время посещения этой вершины */
     std::vector<int> up;
-    
-    std::istream& input;
-    std::vector<int> cutPoints;
+    std::set<int> cutPoints;
     int time = 0;
 };

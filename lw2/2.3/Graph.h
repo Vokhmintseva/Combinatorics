@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <map>
 #include <set>
 
 struct Edge {
@@ -22,16 +23,16 @@ public:
     void printFines(std::ostream& output, std::vector<std::vector<int>> fines);
 
 private:
+    using Matrix = std::map<int, std::map<int, int>>;
     void makeAdjacencyMatrix();
-    int reduceMatrix();
+    int reduceMatrix(Matrix &m);
     int vertexesNumber = 0;
     std::vector<Edge> edges;
-    using Matrix = std::vector<std::vector<int>>;
     Matrix adjacencyMatrix;
     Matrix fines;
     int bottomLimit = 0;
     int record = 0;
-    std::vector<int> minRow;
-    std::vector<int> minColumn;
+    //std::vector<int> minRow;
+    //std::vector<int> minColumn;
 
 };

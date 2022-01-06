@@ -1,8 +1,8 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include <map>
 #include <set>
+#include <list>
 
 struct Edge {
     std::pair<int, int> edge;
@@ -11,28 +11,26 @@ struct Edge {
 
 class Graph {
 public:
+    using Matrix = std::vector<std::vector<int>>;
     Graph(int vertexesNumber, std::vector<Edge> edges);
-    void printMatrix—oefficients(std::ostream& output);
-    std::vector<int> findHamiltonCycle();
-    void printMinRow(std::ostream& output);
-    void printMinColumn(std::ostream& output);
-    void findMinRowValues();
-    void findMinColumnValues();
-    int countBound();
-    std::vector<std::vector<int>> countFines();
-    void printFines(std::ostream& output, std::vector<std::vector<int>> fines);
+    void printMatrix—oefficients(const Matrix& m, std::ostream& output);
+    void findHamiltonCycle();
+    std::list<Edge> testPreventCycles(std::list<Edge> p);
 
 private:
-    using Matrix = std::map<int, std::map<int, int>>;
     void makeAdjacencyMatrix();
+    Edge getZeroElementWithMaxFine(const Matrix& m);
+    void preventCycle(Matrix& m, std::list<Edge> pathes);
+    void preventCycles(Matrix& m, std::list<Edge> pathes);
+    Edge getRealCoordinates(const Matrix& m, const Edge &e);
+    Edge getCoordinatesInMatrix(const Matrix& m, const Edge& realE);
+    int calculateFine(const Matrix& m, int rowNumber, int columnNumber);
     int reduceMatrix(Matrix &m);
+    void deleteEdges(Matrix& m, const Edge &edge);
+    void solve(Matrix m, std::list<Edge> path, int bound);
     int vertexesNumber = 0;
     std::vector<Edge> edges;
     Matrix adjacencyMatrix;
-    Matrix fines;
-    int bottomLimit = 0;
-    int record = 0;
-    //std::vector<int> minRow;
-    //std::vector<int> minColumn;
-
+    int bestBound = 0;
+    std::list<Edge> bestPath;
 };

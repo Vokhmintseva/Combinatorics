@@ -11,144 +11,267 @@
 Graph::Graph(int vertexesNumber, std::vector<Edge> edges)
     : vertexesNumber(vertexesNumber),
     edges(std::move(edges)) {
-    makeAdjacencyMatrix();    
+    makeAdjacencyMatrix();
 }
 
 void Graph::makeAdjacencyMatrix() {
-    for (size_t i = 1; i <= vertexesNumber; ++i) {
-        for (size_t j = 1; j <= vertexesNumber; ++j) {
-            adjacencyMatrix[i][j] = INT_MAX;
-        }
-    }
+    adjacencyMatrix.assign(vertexesNumber + 1, std::vector<int>(vertexesNumber + 1, INT_MAX));
     for (const auto& e : edges) {
         adjacencyMatrix[e.edge.first][e.edge.second] = e.weight;
         adjacencyMatrix[e.edge.second][e.edge.first] = e.weight;
     }
+    
+    std::iota(adjacencyMatrix[0].begin(), adjacencyMatrix[0].end(), 0);
+    for (int i = 0; i < adjacencyMatrix.size(); ++i) {
+        adjacencyMatrix[i][0] = i;
+    }
 }
 
-void Graph::printMatrixСoefficients(std::ostream& output) {
-    for (size_t i = 1; i <= adjacencyMatrix.size(); ++i) {
-        for (unsigned int j = 1; j <= adjacencyMatrix[i].size(); j++) {
-            output << adjacencyMatrix[i][j] << " ";
+void Graph::printMatrixСoefficients(const Matrix &m, std::ostream& output) {
+    for (size_t i = 0; i < m.size(); ++i) {
+        for (unsigned int j = 0; j < m[i].size(); j++) {
+            if (m[i][j] == INT_MAX) {;
+                output << "- ";
+            } else {
+                output << m[i][j] << " ";
+            }
         }
         output << std::endl;
     }
 }
 
 int Graph::reduceMatrix(Matrix &m) {
-    //переменная для хранения суммы приведения матрицы по строкам
-    int rowReduction = 0;
-
-    //создадим массив для хранения мимнимальных значений по столбцу, заполним его сначала INT_MAX;
-    std::map<int, int> minColumn;
-    std::for_each(m.begin(), m.end(), [&minColumn](std::pair<const int, std::map<int, int>>& row) {
-        minColumn[row.first] = INT_MAX;
-    });
-
-    //переберем каждую строку матрицы;
-    for (auto& pair: m) {
-        const int rowNumber = pair.first;
-        std::map<int, int> row = pair.second;
-        std::map<int, int>::iterator minRowIt = std::min_element(row.begin(), row.end(), [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
-        int minRowValue = (*minRowIt).second;
-        
-        // если из какой-то вершины нет пути, то этот путь вообще не рассматриваем;
-        if (minRowValue == INT_MAX) return -1;
-
-        rowReduction += minRowValue;
-        
-        //из каждого элемента строки вычтем минимальное значение по строке;
-        std::for_each(row.begin(), row.end(), [minRowValue](std::pair<const int, int>& elem) {
-            if (elem.second != INT_MAX) {
-                elem.second -= minRowValue;
+    std::vector<int> minRow(m.size(), INT_MAX);
+    std::vector<int> minColumn(m.size(), INT_MAX);
+    for (size_t i = 1; i < m.size(); ++i) {
+        std::vector<int>::iterator minRowIt = std::min_element(m[i].begin() + 1, m[i].end());
+        int minRowValue = *minRowIt;
+        minRow[i] = minRowValue;
+        std::for_each(m[i].begin() + 1, m[i].end(), [minRowValue](int& elem) {
+            if (elem != INT_MAX) {
+                elem -= minRowValue;
             }
         });
-        
-        //в массив minColumn поместим минимальные значения по каждому столбцу матрицы
-        std::for_each(row.begin(), row.end(), [&minColumn](std::pair<const int, int>& elem) {
-            int columnNumber = elem.first;
-            if (elem.second < minColumn[columnNumber]) {
-                minColumn[columnNumber] = elem.second;
-            }
-        });
-    }
 
-    /*auto print = [](const std::map<int, int>::value_type& elem) { if (elem.second == INT_MAX) { std::cout << " -"; } else { std::cout << " " << elem.second; } };
-    std::for_each(minColumn.cbegin(), minColumn.cend(), print);
-    std::cout << "\n";*/
-
-    // заново переберем всю матрицу и из каждого элемента столбца вычтем его минимум;
-    for (auto& pair : m) {
-        const int rowNumber = pair.first;
-        std::map<int, int> row = pair.second;
-        for (auto& elem : row) {
-            const int columnNumber = pair.first;
-            if (m[rowNumber][columnNumber] != INT_MAX) {
-                // если минимальное значение INT_MAX, то пути эту вершину нет, значит этот путь не рассматриваем
-                if (minColumn[columnNumber] == INT_MAX) return -1;
-                m[rowNumber][columnNumber] -= minColumn[columnNumber];
+        for (size_t j = 1; j < m.size(); ++j) {
+            if (m[i][j] < minColumn[j]) {
+                minColumn[j] = m[i][j];
             }
         }
     }
+    for (size_t i = 1; i < m.size(); ++i) {
+        for (size_t j = 1; j < m.size(); ++j) {
+            if (m[i][j] != INT_MAX) {
+                m[i][j] -= minColumn[j];
+            }
+        }
+    }
+    //std::copy(minRow.begin() + 1, minRow.end(), std::ostream_iterator<int>(std::cout, " "));
+    //std::cout << std::endl;
+    //std::copy(minColumn.begin() + 1, minColumn.end(), std::ostream_iterator<int>(std::cout, " "));
+    //printMatrixСoefficients(m, std::cout);
+    //std::cout << std::endl;
+    return std::accumulate(minColumn.cbegin() + 1, minColumn.cend(), 0) + std::accumulate(minRow.cbegin() + 1, minRow.cend(), 0);
     
-    //найдем сумму приведения по столбцам;
-    int columnReduction = std::accumulate(minColumn.cbegin(), minColumn.cend(), 0, [](int value, const std::map<int, int>::value_type& elem) {
-        return value + elem.second; 
-    });
-
-    return rowReduction + columnReduction;
 }
 
-/*std::vector<std::vector<int>> Graph::countFines() {
-    std::vector<std::vector<int>> fines(vertexesNumber + 1, std::vector<int>(vertexesNumber + 1, -1));
-    for (size_t i = 1; i < adjacencyMatrix.size(); ++i) {
-        for (size_t j = 1; j < adjacencyMatrix.size(); ++j) {
-            if (adjacencyMatrix[i][j] == 0) {
-                fines[i][j] = minColumn[j] + minRow[i];
-            }
-        }
-    }
-    return fines;
-}*/
-
-int getCoefficient(const Matrix& m, int row, int Column) {
+int Graph::calculateFine(const Matrix& m, int rowNumber, int columnNumber) {
+    //std::cout << rowNumber << " " << columnNumber << " ";
     int rowMin = INT_MAX;
     int columnMin = INT_MAX;
-    
-    for (size_t i = 0; i < m.size(); ++i) {
-        if (i != r)
-            rmin = std::min(rmin, m(i, c));
-        if (i != c)
-            cmin = std::min(cmin, m(r, i));
+    for (size_t i = 1; i < m.size(); ++i) {
+        if (i != rowNumber)
+            rowMin = std::min(rowMin, m[i][columnNumber]);
+        if (i != columnNumber)
+            columnMin = std::min(columnMin, m[rowNumber][i]);
     }
-
-    return rmin + cmin;
+    //std::cout << rowMin + columnMin << std::endl;
+    return rowMin + columnMin;
 }
 
-std::vector<int> Graph::findHamiltonCycle() {
-    bottomLimit += reduceMatrix(adjacencyMatrix);
-    if (bottomLimit > record) {
-        return;
-    }
-    // список координат нулевых элементов
+Edge Graph::getZeroElementWithMaxFine(const Matrix &m) {
+    std::list<Edge> zeroEdges;
     std::list<std::pair<int, int>> zeroVertexes;
-    // список их коэффициентов
-    std::list<int> coefficientsList;
-
-    // максимальный коэффициент
-    int maxCoeff = 0;
-    // поиск нулевых элементов
-    for (size_t i = 0; i < adjacencyMatrix.size(); ++i)
-        for (size_t j = 0; j < matrix.size(); ++j)
-            // если равен нулю
-            if (!matrix(i, j)) {
-                // добавление в список координат
-                zeros.emplace_back(i, j);
-                // расчет коэффициена и добавление в список
-                coeffList.push_back(getCoefficient(matrix, i, j));
-                // сравнение с максимальным
-                maxCoeff = std::max(maxCoeff, coeffList.back());
+    std::list<int> coefficients;
+    int maxCoefficient = 0;
+    for (size_t i = 1; i < m.size(); ++i) {
+        for (size_t j = 1; j < m.size(); ++j) {
+            if (m[i][j] == 0) {
+                int weight = calculateFine(m, i, j);
+                Edge e = { { i, j }, weight };
+                zeroEdges.emplace_back(std::move(e));
             }
-    std::vector<int> v;
-    return v;
+        }
+    }
+    auto edgeWithMaxFine = std::max_element(zeroEdges.cbegin(), zeroEdges.cend(), [](Edge const lhs, Edge const rhs) {
+        return lhs.weight < rhs.weight;
+    });
+    return *edgeWithMaxFine;
+}
+
+void Graph::deleteEdges(Matrix& m, const Edge& e) {
+    m.erase(m.begin() + e.edge.first);
+    for (size_t i = 0; i < m.size(); ++i) {
+        m[i].erase(m[i].begin() + e.edge.second);
+    }
+}
+
+int getRowIndex(const Graph::Matrix& m, int row) {
+    for (int i = 1; i < m.size(); ++i) {
+        if (m[i][0] == row) {
+            return i;
+        }
+    }
+    return INT_MAX;
+}
+
+int getColumnIndex(const Graph::Matrix& m, int column) {
+    auto it = std::find(m[0].begin() + 1, m[0].end(), column);
+    return it != m[0].end() ? *it : INT_MAX;
+}
+
+/*void Graph::preventCycle(Matrix& m, std::list<Edge> pathes) {
+    std::list<Edge> l1(pathes);
+
+    bool isCycleFound = true;
+    std::list<Edge> cycledEdges;
+    std::list<Edge> l2;
+
+    while (isCycleFound) {
+        cycledEdges.clear();
+        l2.clear();
+
+        for (Edge &edge2: l1) {
+
+            // нет смысла обходить уже добавленные
+            if (std::find(cycledEdges.begin(), cycledEdges.end(), edge2) != cycledEdges.end()) {
+                continue;
+            }
+
+            for (Edge& edge1 : l1) {
+                // игнорируем сами себя
+                if (edge1.edge.first == edge2.edge.first && edge1.edge.second == edge2.edge.second) {
+                    continue;
+                }
+
+                // нет смысла обходить уже добавленные
+                if (std::find(cycledEdges.begin(), cycledEdges.end(), edge1) != cycledEdges.end()) {
+                    continue;
+                }
+
+                if (edge2.edge.first == edge1.edge.second) {
+                    Edge e;
+                    e.edge.first = edge1.edge.first;
+                    e.edge.second = edge2.edge.second;
+                    l2.push_back(e);
+                    cycledEdges.push_back(edge1);
+                    cycledEdges.push_back(edge2);
+                    continue;
+                }
+            }
+
+            // нет смысла обходить уже добавленные
+            if (std::find(cycledEdges.begin(), cycledEdges.end(), edge2) != cycledEdges.end()) {
+                continue;
+            }
+
+            l2.push_back(edge2);
+        }
+        l1 = l2;
+        isCycleFound = !cycledEdges.empty();
+    }
+}*/
+
+void Graph::preventCycles(Matrix& m, std::list<Edge> pathes) {
+    std::list<Edge> pathesCopy = pathes;
+    auto it = std::begin(pathes);
+    //foreach($paths as $row = > $column)
+    for (Edge &path : pathes) {
+        int row = path.edge.first;
+        int column = path.edge.second;
+        
+        int rowIndex = getRowIndex(m, column);
+        int columnIndex = getColumnIndex(m, row);
+        if (rowIndex != INT_MAX && columnIndex != INT_MAX) {
+            m[columnIndex][rowIndex] = INT_MAX;
+        }
+        //foreach($pathCopy as $rowCopy  != > $columnCopy)
+        auto itCopy = std::begin(pathesCopy);
+        for (Edge pathCopy : pathesCopy) {
+            int rowCopy = pathCopy.edge.first;
+            int columnCopy = pathCopy.edge.second;
+            if (row == columnCopy) {
+                //$paths[$rowCopy] = $column;
+                //unset($paths[$row]);
+                itCopy->edge.second = column;
+                pathes.erase(it);
+                m[rowCopy][column] = INT_MAX;
+                m[column][rowCopy] = INT_MAX;
+                preventCycles(m, pathes);
+            }
+            ++itCopy;
+        }
+        ++it;
+    }
+}
+
+std::list<Edge> Graph::testPreventCycles(std::list<Edge> p) {
+    std::list<Edge> pathes = p;
+    bool isCycleFound = true;
+    while (isCycleFound) {
+        isCycleFound = false;
+        for (Edge& path1 : pathes) {
+            int row1 = path1.edge.first;
+            int column1 = path1.edge.second;
+            for (Edge& path2 : pathes) {
+                int row2 = path2.edge.first;
+                int column2 = path2.edge.second;
+                if (row1 == column2) {
+                    isCycleFound = true;
+                    path2.edge.second = column1;
+                    auto it = std::find_if(pathes.begin(), pathes.end(), [row1, column1](const Edge& e) {return (e.edge.first == row1 && e.edge.second == column1); });
+                    pathes.erase(it);
+                    break;
+                }
+            }
+            if (isCycleFound) break;
+        }
+    }
+    return pathes;
+}
+
+Edge Graph::getRealCoordinates(const Matrix& m, const Edge& e) {
+    Edge realEdge;
+    realEdge.edge.first = m[e.edge.first][0];
+    realEdge.edge.second = m[0][e.edge.second];
+    return realEdge;
+}
+
+void Graph::solve(Matrix m, std::list<Edge> pathes, int bound) {
+    bound += reduceMatrix(m);
+    Edge edge = getZeroElementWithMaxFine(m);
+    Edge edgeReal = getRealCoordinates(m, edge);
+    Matrix m1(m);
+    deleteEdges(m1, edge);
+    //printMatrixСoefficients(m1, std::cout);
+    std::list<Edge> pathes1 = pathes;
+    pathes1.emplace_back(edgeReal);
+    preventCycles(m1, pathes1);
+    
+    
+    std::cout << "iter 2" << std::endl;
+    bound += reduceMatrix(m1);
+    //printMatrixСoefficients(m1, std::cout);
+    edge = getZeroElementWithMaxFine(m1);
+    edgeReal = getRealCoordinates(m1, edge);
+    pathes1.emplace_back(edgeReal);
+    printMatrixСoefficients(m1, std::cout);
+    preventCycles(m1, pathes1);
+}
+
+void Graph::findHamiltonCycle() {
+    std::list<Edge> path;
+    int bound = 0;
+    
+    solve(adjacencyMatrix, path, bound);
 }

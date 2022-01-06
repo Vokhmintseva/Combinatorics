@@ -8,8 +8,7 @@
 #include <vector>
 #include <set>
 #include <utility>
-#include <algorithm>
-#include "Graph.h"
+#include "LittleAlgorithm.h"
 
 bool readGraphData(std::istream& input, int& vertexesNumber, std::vector<Edge>& edges) {
     int edgesNumber = 0;
@@ -46,12 +45,6 @@ void printCutPoints(std::ostream& output, const std::set<int>& cutPoints) {
 }
 
 int main(int argc, char* argv[]) {
-    /*if (argc != 2) {
-        std::cout << "Invalid argument count\nUsage: cutPoints.exe <input file name>\n";
-        return 1;
-    }
-
-    std::string inputFileName = argv[1];*/
     std::ifstream inputFile;
     inputFile.open("file.txt");
     if (!inputFile.is_open()) {
@@ -67,26 +60,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    Graph graph(vertexesNumber, edges);
-    //graph.printMatrixСoefficients(std::cout);
-    //graph.findHamiltonCycle();
-    //graph.printMinColumn(std::cout);
-    //graph.printMinRow(std::cout);
-    Edge e1{ {1, 5}, 0 };
-    Edge e2{ {8, 1}, 0 };
-    Edge e3{ {2, 8}, 0 };
-    Edge e4{ {4, 9}, 0 };
-    Edge e5{ {7, 4}, 0 };
-    Edge e6{ {3, 6}, 0 };
-    std::list<Edge> ed;
-    ed.emplace_back(e1);
-    ed.emplace_back(e2);
-    ed.emplace_back(e3);
-    ed.emplace_back(e4);
-    ed.emplace_back(e5);
-    ed.emplace_back(e6);
-    std::list<Edge> newEdges = graph.testPreventCycles(ed);
-   for (Edge e : newEdges) {
-       std::cout << e.edge.first << " " << e.edge.second << std::endl;
-   }
+    LittleAlgorithm graph(vertexesNumber, edges);
+    graph.findHamiltonCycle();
 }

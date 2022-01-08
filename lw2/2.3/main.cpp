@@ -1,4 +1,4 @@
-﻿// branchAndBound.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
+﻿// main.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 //
 
 #include <iostream>
@@ -6,9 +6,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <set>
 #include <utility>
-#include "LittleAlgorithm.h"
+#include <algorithm>
+#include "BranchAndBound.h"
 
 bool readGraphData(std::istream& input, int& vertexesNumber, std::vector<Edge>& edges) {
     int edgesNumber = 0;
@@ -20,12 +20,9 @@ bool readGraphData(std::istream& input, int& vertexesNumber, std::vector<Edge>& 
         return false;
     }
 
-    if (!(istrstr >> edgesNumber)) {
-        return false;
-    }
-
+    int maxVertexesNumber = vertexesNumber * vertexesNumber - vertexesNumber;
     int stringsCounter = 0;
-    while (getline(input, line) && stringsCounter < edgesNumber) {
+    while (getline(input, line)) {
         ++stringsCounter;
         std::stringstream istrstr(line);
         int vertex1, vertex2, weight = 0;
@@ -36,20 +33,24 @@ bool readGraphData(std::istream& input, int& vertexesNumber, std::vector<Edge>& 
             return false;
         }
     }
-
-    return stringsCounter == edgesNumber;
+    return stringsCounter <= maxVertexesNumber;
 }
 
-void printCutPoints(std::ostream& output, const std::set<int>& cutPoints) {
-    copy(cutPoints.cbegin(), cutPoints.cend(), std::ostream_iterator<int>(std::cout, " "));
+void printVertexesList(std::ostream& output, const std::list<int>& vertexesList) {
+    copy(vertexesList.cbegin(), vertexesList.cend(), std::ostream_iterator<int>(std::cout, " "));
 }
 
 int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cout << "Invalid argument count\nUsage: branchAndBound.exe <input file name>\n";
+        return 1;
+    }
+
+    std::string inputFileName = argv[1];
     std::ifstream inputFile;
-    inputFile.open("file.txt");
+    inputFile.open(inputFileName);
     if (!inputFile.is_open()) {
-        //std::cout << "Failed to open '" << inputFileName << "' for reading\n";
-        std::cout << "Failed to open file\n";
+        std::cout << "Failed to open '" << inputFileName << "' for reading\n";
         return 1;
     }
 
@@ -60,6 +61,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    LittleAlgorithm graph(vertexesNumber, edges);
-    graph.findHamiltonCycle();
+    BranchAndBound branchAndBound(vertexesNumber, edges);
+    std::list<int> path = branchAndBound.findHamiltonCycle();
+    printVertexesList(std::cout, path);
 }
